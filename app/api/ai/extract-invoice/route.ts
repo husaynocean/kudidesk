@@ -5,7 +5,10 @@ import { extractInvoice } from "@/lib/ai/extractInvoice";
 
 const Body = z.object({
   chat: z.string().trim().min(10, "Paste a bit more of the conversation").max(20_000),
-  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  today: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 /** POST /api/ai/extract-invoice — turn a pasted client chat into an invoice draft for review. */

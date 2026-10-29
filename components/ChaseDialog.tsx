@@ -100,14 +100,19 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
   const count = drafts.filter((d) => include.has(d.id) && status[d.id]?.state !== "sent").length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
       >
         <div className="flex items-start justify-between border-b border-gray-100 p-5">
           <div>
-            <h2 className="text-lg font-semibold">✨ Chase {rows.length === 1 ? "this invoice" : `${rows.length} invoices`}</h2>
+            <h2 className="text-lg font-semibold">
+              ✨ Chase {rows.length === 1 ? "this invoice" : `${rows.length} invoices`}
+            </h2>
             <p className="text-sm text-gray-500">
               {loading
                 ? "The agent is reading each invoice and the client's payment history…"
@@ -120,8 +125,7 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto p-5">
-          {loading &&
-            rows.map((r) => <div key={r.id} className="h-36 animate-pulse rounded-xl bg-gray-50" />)}
+          {loading && rows.map((r) => <div key={r.id} className="h-36 animate-pulse rounded-xl bg-gray-50" />)}
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
           {drafts.map((d) => {
@@ -129,7 +133,10 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
             const st = status[d.id];
             const on = include.has(d.id);
             return (
-              <div key={d.id} className={`rounded-xl border p-4 ${on ? "border-gray-200" : "border-dashed border-gray-200 opacity-60"}`}>
+              <div
+                key={d.id}
+                className={`rounded-xl border p-4 ${on ? "border-gray-200" : "border-dashed border-gray-200 opacity-60"}`}
+              >
                 <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -150,7 +157,9 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
                     {row?.number} · {row && money(row.amount, row.currency)}
                     {row?.daysOverdue ? ` · ${row.daysOverdue}d late` : " · not yet due"}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${TONE_STYLE[d.tone]}`}>{d.tone}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${TONE_STYLE[d.tone]}`}>
+                    {d.tone}
+                  </span>
                   <span className="ml-auto text-xs">
                     {st?.state === "sending" && <span className="text-gray-500">Sending…</span>}
                     {st?.state === "sent" && <span className="font-semibold text-kudi-700">✓ Sent via PayPal</span>}

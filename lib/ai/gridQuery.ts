@@ -32,7 +32,10 @@ Rules:
 - Relative dates ("this month", "last 30 days", "since September") resolve against TODAY. For paid invoices use paidAt, otherwise issuedAt.
 - If the question can't be answered with these columns, return empty filters and say why in the explanation.`;
 
-export async function askGrid(question: string, ctx: QueryContext): Promise<{ query: GridQuery; source: "gemini" | "rules" }> {
+export async function askGrid(
+  question: string,
+  ctx: QueryContext,
+): Promise<{ query: GridQuery; source: "gemini" | "rules" }> {
   if (!hasGemini()) return { query: parseWithRules(question, ctx), source: "rules" };
 
   const prompt = `TODAY: ${ctx.today}

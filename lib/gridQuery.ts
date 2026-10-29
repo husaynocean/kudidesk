@@ -17,7 +17,10 @@ export const GRID_COLUMNS = {
   currency: { kind: "text", about: "invoice currency code: USD, GBP, EUR or CAD" },
   amount: { kind: "number", about: "invoice amount in its OWN currency (see currency column)" },
   amountNgn: { kind: "number", about: "approximate value in Nigerian naira (₦)" },
-  state: { kind: "text", about: "one of Paid, Overdue, Awaiting, Draft, Cancelled, Refunded. 'Unpaid' = Overdue OR Awaiting" },
+  state: {
+    kind: "text",
+    about: "one of Paid, Overdue, Awaiting, Draft, Cancelled, Refunded. 'Unpaid' = Overdue OR Awaiting",
+  },
   daysOverdue: { kind: "number", about: "days past the due date (only for overdue invoices)" },
   issuedAt: { kind: "date", about: "date the invoice was issued" },
   dueDate: { kind: "date", about: "payment due date" },
@@ -58,8 +61,10 @@ export function sanitize(q: GridQuery): GridQuery {
   const filters = q.filters.filter((f) => {
     const kind = GRID_COLUMNS[f.colId].kind;
     if (!(OPS[kind] as readonly string[]).includes(f.op)) return false;
-    if (kind === "number") return Number.isFinite(Number(f.value)) && (f.op !== "inRange" || Number.isFinite(Number(f.valueTo)));
-    if (kind === "date") return DATE_RE.test(String(f.value)) && (f.op !== "inRange" || DATE_RE.test(String(f.valueTo ?? "")));
+    if (kind === "number")
+      return Number.isFinite(Number(f.value)) && (f.op !== "inRange" || Number.isFinite(Number(f.valueTo)));
+    if (kind === "date")
+      return DATE_RE.test(String(f.value)) && (f.op !== "inRange" || DATE_RE.test(String(f.valueTo ?? "")));
     return String(f.value).trim().length > 0;
   });
   return { ...q, filters };
@@ -72,7 +77,12 @@ type AgCondition = Record<string, unknown>;
 function toAgCondition(f: GridCondition): AgCondition {
   const kind = GRID_COLUMNS[f.colId].kind;
   if (kind === "number") {
-    return { filterType: "number", type: f.op, filter: Number(f.value), filterTo: f.valueTo == null ? null : Number(f.valueTo) };
+    return {
+      filterType: "number",
+      type: f.op,
+      filter: Number(f.value),
+      filterTo: f.valueTo == null ? null : Number(f.valueTo),
+    };
   }
   if (kind === "date") {
     return {
@@ -126,11 +136,21 @@ export function describe(q: GridQuery): string[] {
     lessThanOrEqual: "≤",
   };
   const label = (c: GridColId) =>
-    ({ clientName: "client", clientEmail: "email", clientCountry: "country", amountNgn: "₦ value", daysOverdue: "days overdue", issuedAt: "issued", dueDate: "due", paidAt: "paid", description: "work" })[
-      c as string
-    ] ?? c;
+    ({
+      clientName: "client",
+      clientEmail: "email",
+      clientCountry: "country",
+      amountNgn: "₦ value",
+      daysOverdue: "days overdue",
+      issuedAt: "issued",
+      dueDate: "due",
+      paidAt: "paid",
+      description: "work",
+    })[c as string] ?? c;
   const chips = q.filters.map((f) =>
-    f.op === "inRange" ? `${label(f.colId)} ${f.value}–${f.valueTo}` : `${label(f.colId)} ${sym[f.op] ?? f.op} ${f.value}`,
+    f.op === "inRange"
+      ? `${label(f.colId)} ${f.value}–${f.valueTo}`
+      : `${label(f.colId)} ${sym[f.op] ?? f.op} ${f.value}`,
   );
   for (const s of q.sort) chips.push(`sort ${label(s.colId)} ${s.dir === "asc" ? "↑" : "↓"}`);
   return chips;
@@ -173,7 +193,10 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
 
   // Payment state.
   if (/\b(unpaid|outstanding|owed|owing|not paid|haven't paid|hasn't paid)\b/.test(t)) {
-    filters.push({ colId: "state", op: "equals", value: "Overdue" }, { colId: "state", op: "equals", value: "Awaiting" });
+    filters.push(
+      { colId: "state", op: "equals", value: "Overdue" },
+      { colId: "state", op: "equals", value: "Awaiting" },
+    );
   } else if (/\b(overdue|late|past due)\b/.test(t)) {
     filters.push({ colId: "state", op: "equals", value: "Overdue" });
   } else if (/\b(paid|received|settled)\b/.test(t)) {
@@ -205,8 +228,22 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
   for (const m of t.matchAll(amountRe)) {
     const n = Number(m[3].replace(/,/g, "")) * (m[4] === "k" ? 1e3 : m[4] === "m" ? 1e6 : 1);
     const unit = (m[2] ?? "") + (m[5] ?? "");
-    const op = /over|above|more|greater/.test(m[1]) ? "greaterThan" : /least/.test(m[1]) ? "greaterThanOrEqual" : /most/.test(m[1]) ? "lessThanOrEqual" : "lessThan";
-    const cur = /£|pound|gbp/.test(unit) ? "GBP" : /€|euro|eur/.test(unit) ? "EUR" : /c\$|cad/.test(unit) ? "CAD" : /\$|dollar|usd/.test(unit) ? "USD" : null;
+    const op = /over|above|more|greater/.test(m[1])
+      ? "greaterThan"
+      : /least/.test(m[1])
+        ? "greaterThanOrEqual"
+        : /most/.test(m[1])
+          ? "lessThanOrEqual"
+          : "lessThan";
+    const cur = /£|pound|gbp/.test(unit)
+      ? "GBP"
+      : /€|euro|eur/.test(unit)
+        ? "EUR"
+        : /c\$|cad/.test(unit)
+          ? "CAD"
+          : /\$|dollar|usd/.test(unit)
+            ? "USD"
+            : null;
     if (/₦|naira|ngn/.test(unit) || (!cur && n >= 10_000)) {
       filters.push({ colId: "amountNgn", op, value: n });
     } else {
@@ -216,7 +253,9 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
   }
 
   // "overdue by more than a week", "over 10 days overdue"
-  const late = t.match(/(?:more than|over|at least)\s+(\d+|a|one|two)\s+(day|week)s?\s+(?:overdue|late)|overdue (?:by )?(?:more than|over)\s+(\d+|a|one|two)\s+(day|week)s?/);
+  const late = t.match(
+    /(?:more than|over|at least)\s+(\d+|a|one|two)\s+(day|week)s?\s+(?:overdue|late)|overdue (?:by )?(?:more than|over)\s+(\d+|a|one|two)\s+(day|week)s?/,
+  );
   if (late) {
     const word = late[1] ?? late[3];
     const unit = late[2] ?? late[4];
@@ -229,11 +268,13 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
   // Time windows.
   const month = ctx.today.slice(0, 7);
   const dateCol = filters.some((f) => f.colId === "state" && f.value === "Paid") ? "paidAt" : "issuedAt";
-  if (/\bthis month\b/.test(t)) filters.push({ colId: dateCol, op: "greaterThan", value: shiftDays(`${month}-01`, -1) });
+  if (/\bthis month\b/.test(t))
+    filters.push({ colId: dateCol, op: "greaterThan", value: shiftDays(`${month}-01`, -1) });
   else if (/\blast (\d+) days\b/.test(t)) {
     const n = Number(t.match(/\blast (\d+) days\b/)![1]);
     filters.push({ colId: dateCol, op: "greaterThan", value: shiftDays(ctx.today, -n - 1) });
-  } else if (/\b(this|past) week\b/.test(t)) filters.push({ colId: dateCol, op: "greaterThan", value: shiftDays(ctx.today, -8) });
+  } else if (/\b(this|past) week\b/.test(t))
+    filters.push({ colId: dateCol, op: "greaterThan", value: shiftDays(ctx.today, -8) });
 
   // Sorting.
   if (/\b(oldest|earliest)\b/.test(t)) sort.push({ colId: "issuedAt", dir: "asc" });
@@ -245,6 +286,9 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
   return sanitize({
     filters,
     sort,
-    explanation: filters.length || sort.length ? "Matched with the offline parser (no GEMINI_API_KEY set)." : "Sorry, I couldn't understand that one without AI.",
+    explanation:
+      filters.length || sort.length
+        ? "Matched with the offline parser (no GEMINI_API_KEY set)."
+        : "Sorry, I couldn't understand that one without AI.",
   });
 }

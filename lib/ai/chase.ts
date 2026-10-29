@@ -121,7 +121,10 @@ function templateDraft(c: InvoiceContext, tone: Tone, sender: string): ReminderD
   const sign = sender ? `\n\n${sender}` : "";
   const late = c.daysOverdue === 1 ? "1 day" : `${c.daysOverdue} days`;
   const thanks = c.history.paidBefore > 0 ? " Thanks as always for working with me." : "";
-  const open = c.history.otherUnpaid > 0 ? ` There ${c.history.otherUnpaid === 1 ? "is also 1 other open invoice" : `are also ${c.history.otherUnpaid} other open invoices`} on your account.` : "";
+  const open =
+    c.history.otherUnpaid > 0
+      ? ` There ${c.history.otherUnpaid === 1 ? "is also 1 other open invoice" : `are also ${c.history.otherUnpaid} other open invoices`} on your account.`
+      : "";
 
   const byTone: Record<Tone, { subject: string; note: string; why: string }> = {
     "heads-up": {
@@ -137,7 +140,9 @@ function templateDraft(c: InvoiceContext, tone: Tone, sender: string): ReminderD
     firm: {
       subject: `Invoice ${c.invoice} is ${late} overdue`,
       note: `Hi ${first}, following up on invoice ${c.invoice} for ${c.work} (${c.amount}), which is now ${late} overdue.${open} Could you let me know when I can expect payment? Happy to help if anything is holding it up.`,
-      why: c.remindedBefore ? "Already reminded once, so asking for a payment date." : `${late} late — polite but asking for a date.`,
+      why: c.remindedBefore
+        ? "Already reminded once, so asking for a payment date."
+        : `${late} late — polite but asking for a date.`,
     },
     final: {
       subject: `Overdue: invoice ${c.invoice} (${c.amount})`,

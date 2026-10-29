@@ -15,7 +15,6 @@ const InvoiceGrid = dynamic(() => import("./InvoiceGrid"), {
   loading: () => <div className="h-[560px] animate-pulse rounded-xl bg-white" />,
 });
 
-
 export default function Dashboard() {
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [mode, setMode] = useState<"paypal" | "demo" | null>(null);
@@ -53,9 +52,51 @@ export default function Dashboard() {
     load();
   }, [load]);
 
+  // Live updates: poll the webhook event feed; refresh rows and flash the ones that just got paid.
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    let seq: number | null = null;
+    let stopped = false;
+    async function poll() {
+      try {
+        const res = await fetch(`/api/events?after=${seq ?? 0}`, { cache: "no-store" });
+        const data: { seq: number; events: { invoiceId: string; summary: string; paid: boolean }[] } = await res.json();
+        setLive(true);
+        if (seq !== null && data.events.length) {
+          await load();
+          const paidIds = data.events.filter((e) => e.paid).map((e) => e.invoiceId);
+          if (paidIds.length) {
+            setJustPaid(new Set(paidIds));
+            setTimeout(() => setJustPaid(new Set()), 4000);
+          }
+          const last = data.events[data.events.length - 1];
+          setToast(`${last.paid ? "💸 " : ""}${last.summary}`);
+        }
+        seq = data.seq;
+      } catch {
+        setLive(false);
+      }
+      if (!stopped) timer = setTimeout(poll, 4000);
+    }
+    let timer = setTimeout(poll, 0);
+    // Safety net for missed webhooks: quietly re-sync with PayPal every 2 minutes.
+    const resync = setInterval(load, 120_000);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      clearInterval(resync);
+    };
+  }, [load]);
+
+  const simulatePayment = useCallback(async () => {
+    const res = await fetch("/api/demo/simulate-payment", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) setToast(data.error || "Couldn't simulate a payment");
+  }, []);
+
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
+    const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -73,24 +114,27 @@ export default function Dashboard() {
     };
   }, [rows]);
 
-  const remind = useCallback(async (row: InvoiceRow) => {
-    setRemindingId(row.id);
-    try {
-      const res = await fetch(`/api/invoices/${row.id}/remind`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Reminder failed");
-      setToast(`Reminder sent to ${row.clientName}`);
-      load();
-    } catch (err) {
-      setToast((err as Error).message);
-    } finally {
-      setRemindingId(null);
-    }
-  }, [load]);
+  const remind = useCallback(
+    async (row: InvoiceRow) => {
+      setRemindingId(row.id);
+      try {
+        const res = await fetch(`/api/invoices/${row.id}/remind`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Reminder failed");
+        setToast(`Reminder sent to ${row.clientName}`);
+        load();
+      } catch (err) {
+        setToast((err as Error).message);
+      } finally {
+        setRemindingId(null);
+      }
+    },
+    [load],
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-10">
@@ -120,13 +164,36 @@ export default function Dashboard() {
               {ai === "gemini" ? "✨ Gemini" : "AI offline"}
             </span>
           )}
+          {live && (
+            <span
+              className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500"
+              title="Listening for PayPal webhooks"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kudi-500 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-kudi-500" />
+              </span>
+              Live
+            </span>
+          )}
         </div>
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="rounded-lg bg-kudi-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-kudi-700"
-        >
-          + New invoice
-        </button>
+        <div className="flex items-center gap-2">
+          {mode === "demo" && (
+            <button
+              onClick={simulatePayment}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium hover:bg-gray-50"
+              title="Sends a fake INVOICING.INVOICE.PAID webhook through the real handler"
+            >
+              Simulate a client payment
+            </button>
+          )}
+          <button
+            onClick={() => setDialogOpen(true)}
+            className="rounded-lg bg-kudi-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-kudi-700"
+          >
+            + New invoice
+          </button>
+        </div>
       </header>
 
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

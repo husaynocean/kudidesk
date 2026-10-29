@@ -49,7 +49,10 @@ Rules:
 - Never invent an email address. Use null if one isn't in the text.
 - Keep item names short and professional (e.g. "Logo design — 3 concepts").`;
 
-export async function extractInvoice(chat: string, today: string): Promise<{ draft: InvoiceDraft; source: "gemini" | "rules" }> {
+export async function extractInvoice(
+  chat: string,
+  today: string,
+): Promise<{ draft: InvoiceDraft; source: "gemini" | "rules" }> {
   if (!hasGemini()) return { draft: extractWithRules(chat, today), source: "rules" };
   const raw = await geminiJson(SYSTEM, `TODAY is ${today} (${weekday(today)}).\n\nCHAT:\n"""\n${chat}\n"""`);
   return { draft: InvoiceDraft.parse(raw), source: "gemini" };
@@ -98,12 +101,21 @@ export function extractWithRules(chat: string, today: string): InvoiceDraft {
       const amount = Number(m[1].replace(/,/g, "")) * (m[2] ? 1000 : 1);
       if (!(amount > 0)) continue;
       const after = line.slice(m.index! + m[0].length).match(/^\s*for (?:the |a |an )?([a-z][\w -]{2,40})/i)?.[1];
-      const before = line.slice(prevEnd, m.index).split(/[.,!?;:()]/).filter((x) => x.trim()).pop() ?? "";
+      const before =
+        line
+          .slice(prevEnd, m.index)
+          .split(/[.,!?;:()]/)
+          .filter((x) => x.trim())
+          .pop() ?? "";
       prevEnd = m.index! + m[0].length;
       const name = cleanItemName(after ?? before);
       const key: string | null = name?.toLowerCase() ?? last;
       if (!key) continue;
-      byName.set(key, { name: capitalise(name ?? byName.get(key)?.name ?? "Freelance work"), quantity: 1, unitAmount: amount });
+      byName.set(key, {
+        name: capitalise(name ?? byName.get(key)?.name ?? "Freelance work"),
+        quantity: 1,
+        unitAmount: amount,
+      });
       last = key;
     }
   }
@@ -121,7 +133,7 @@ export function extractWithRules(chat: string, today: string): InvoiceDraft {
     const wd = WEEKDAYS.findIndex((d) => new RegExp(`\\b(by|on|before|this|next)\\s+${d}`).test(lower));
     if (wd >= 0) {
       const cur = new Date(today + "T00:00:00Z").getUTCDay();
-      dueDate = addDays(today, ((wd - cur + 7) % 7) || 7);
+      dueDate = addDays(today, (wd - cur + 7) % 7 || 7);
     } else if (/end of (the )?month/.test(lower)) {
       const d = new Date(today + "T00:00:00Z");
       dueDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
@@ -146,7 +158,11 @@ const FILLER =
 
 /** "Guidelines would be" → "Guidelines"; "Okay," → null. */
 function cleanItemName(text: string): string | null {
-  const words = text.replace(/[^\w\s-]/g, " ").replace(FILLER, " ").replace(/\s+/g, " ").trim();
+  const words = text
+    .replace(/[^\w\s-]/g, " ")
+    .replace(FILLER, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return words.length >= 3 ? words.split(" ").slice(-5).join(" ") : null;
 }
 

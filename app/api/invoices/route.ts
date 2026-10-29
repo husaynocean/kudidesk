@@ -19,7 +19,10 @@ const NewInvoice = z.object({
   clientName: z.string().trim().min(1),
   clientEmail: z.string().trim().email(),
   currency: z.string().length(3).toUpperCase(),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   note: z.string().max(4000).optional(),
   items: z
     .array(

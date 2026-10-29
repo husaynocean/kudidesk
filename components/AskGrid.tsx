@@ -31,7 +31,9 @@ const AskGrid = forwardRef<AskGridHandle, Props>(function AskGrid({ api, rows },
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [active, setActive] = useState<{ query: GridQuery; source: string; state: ReturnType<typeof toAgGrid> } | null>(null);
+  const [active, setActive] = useState<{ query: GridQuery; source: string; state: ReturnType<typeof toAgGrid> } | null>(
+    null,
+  );
   const [showState, setShowState] = useState(false);
 
   useImperativeHandle(ref, () => ({

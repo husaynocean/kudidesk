@@ -54,10 +54,7 @@ function finishRow(r: BaseRow): InvoiceRow {
 }
 
 function itemsTotal(items: { quantity: string | number; unit_amount?: { value: string }; unitAmount?: number }[]) {
-  return items.reduce(
-    (sum, i) => sum + Number(i.quantity) * Number(i.unit_amount?.value ?? i.unitAmount ?? 0),
-    0,
-  );
+  return items.reduce((sum, i) => sum + Number(i.quantity) * Number(i.unit_amount?.value ?? i.unitAmount ?? 0), 0);
 }
 
 function fromPayPal(inv: PayPalInvoice): InvoiceRow {
@@ -81,8 +78,10 @@ function fromPayPal(inv: PayPalInvoice): InvoiceRow {
     payLink: inv.detail.metadata?.recipient_view_url ?? null,
     paidAt:
       inv.status === "PAID" || inv.status === "MARKED_AS_PAID"
-        ? (inv.payments?.transactions?.at(-1)?.payment_date ?? inv.detail.metadata?.last_update_time ?? "").slice(0, 10) ||
-          null
+        ? (inv.payments?.transactions?.at(-1)?.payment_date ?? inv.detail.metadata?.last_update_time ?? "").slice(
+            0,
+            10,
+          ) || null
         : null,
   });
 }
@@ -97,7 +96,17 @@ type DemoInvoice = BaseRow;
 
 // [client, email, work, amount, currency, status, issued (days from now), due, paid]
 const SEED: [string, string, string, number, string, InvoiceStatus, number, number, number | null][] = [
-  ["Sarah Mitchell", "sarah@brightleaf.co.uk", "Brand identity — logo + guidelines", 450, "GBP", "PAID", -150, -136, -138],
+  [
+    "Sarah Mitchell",
+    "sarah@brightleaf.co.uk",
+    "Brand identity — logo + guidelines",
+    450,
+    "GBP",
+    "PAID",
+    -150,
+    -136,
+    -138,
+  ],
   ["Daniel Okafor", "dan@okaforlaw.com", "Law firm website — discovery", 400, "USD", "PAID", -140, -126, -125],
   ["Emma Schulz", "emma@schulz.de", "Product launch emails (x4)", 260, "EUR", "PAID", -118, -104, -101],
   ["Sarah Mitchell", "sarah@brightleaf.co.uk", "Monthly retainer — July", 300, "GBP", "PAID", -110, -96, -97],

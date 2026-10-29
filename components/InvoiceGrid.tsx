@@ -60,7 +60,9 @@ function StateCell({ data, node }: ICellRendererParams<InvoiceRow>) {
       >
         {data.state.toUpperCase()}
       </span>
-      {data.lastRemindedAt && <span className="mt-1 text-[10px] text-gray-400">reminded {ago(data.lastRemindedAt)}</span>}
+      {data.lastRemindedAt && isChaseable(data) && (
+        <span className="mt-1 text-[10px] text-gray-400">reminded {ago(data.lastRemindedAt)}</span>
+      )}
     </div>
   );
 }
@@ -170,7 +172,11 @@ export default function InvoiceGrid({
         cellDataType: "dateString",
         filter: "agDateColumnFilter",
         valueFormatter: (p) =>
-          p.node?.rowPinned ? "" : p.data?.daysOverdue ? `${shortDate(p.value)} · ${p.data.daysOverdue}d late` : shortDate(p.value),
+          p.node?.rowPinned
+            ? ""
+            : p.data?.daysOverdue
+              ? `${shortDate(p.value)} · ${p.data.daysOverdue}d late`
+              : shortDate(p.value),
         cellClassRules: { "text-red-600 font-semibold": (p) => !!p.data?.overdue },
       },
       {
@@ -243,7 +249,13 @@ export default function InvoiceGrid({
   }, []);
 
   const pinnedBottomRowData = useMemo(
-    () => [{ id: "__total", clientName: `${totals.count} invoice${totals.count === 1 ? "" : "s"} shown`, amountNgn: totals.ngn } as InvoiceRow],
+    () => [
+      {
+        id: "__total",
+        clientName: `${totals.count} invoice${totals.count === 1 ? "" : "s"} shown`,
+        amountNgn: totals.ngn,
+      } as InvoiceRow,
+    ],
     [totals],
   );
 

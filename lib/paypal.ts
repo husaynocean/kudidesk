@@ -28,9 +28,7 @@ export function hasPayPalCredentials() {
 async function getAccessToken(): Promise<string> {
   if (token && Date.now() < token.expiresAt) return token.value;
 
-  const auth = Buffer.from(
-    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`,
-  ).toString("base64");
+  const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
 
   const res = await fetch(`${BASE}/v1/oauth2/token`, {
     method: "POST",
@@ -137,10 +135,10 @@ export async function createAndSendInvoice(input: NewInvoiceInput) {
     },
   });
 
-  const sent = await paypal<{ links?: { href: string; rel: string }[] }>(
-    `/v2/invoicing/invoices/${draft.id}/send`,
-    { method: "POST", body: { send_to_recipient: true, send_to_invoicer: false } },
-  );
+  const sent = await paypal<{ links?: { href: string; rel: string }[] }>(`/v2/invoicing/invoices/${draft.id}/send`, {
+    method: "POST",
+    body: { send_to_recipient: true, send_to_invoicer: false },
+  });
 
   const payLink = sent.links?.find((l) => l.rel === "payer-view")?.href ?? null;
   return { id: draft.id, payLink };
@@ -152,6 +150,30 @@ export async function remindInvoice(id: string, note?: string, subject?: string)
     method: "POST",
     body: { subject: subject || undefined, note: note || undefined, send_to_invoicer: false, send_to_recipient: true },
   });
+}
+
+/* ----------------------------- Webhooks ----------------------------- */
+
+/**
+ * Asks PayPal whether a webhook delivery is genuine.
+ * Docs: https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature_post
+ */
+export async function verifyWebhook(headers: Headers, event: unknown, webhookId: string): Promise<boolean> {
+  const h = (name: string) => headers.get(name) ?? "";
+  if (!h("paypal-transmission-id") || !h("paypal-transmission-sig")) return false;
+  const data = await paypal<{ verification_status?: string }>("/v1/notifications/verify-webhook-signature", {
+    method: "POST",
+    body: {
+      auth_algo: h("paypal-auth-algo"),
+      cert_url: h("paypal-cert-url"),
+      transmission_id: h("paypal-transmission-id"),
+      transmission_sig: h("paypal-transmission-sig"),
+      transmission_time: h("paypal-transmission-time"),
+      webhook_id: webhookId,
+      webhook_event: event,
+    },
+  });
+  return data.verification_status === "SUCCESS";
 }
 
 /** Cheap call used by /api/health to confirm the credentials work. */

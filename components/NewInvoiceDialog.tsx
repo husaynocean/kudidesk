@@ -145,7 +145,10 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
     `${base} ${f && aiFields.has(f) ? "border-violet-300 bg-violet-50/60" : "border-gray-300"}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
       <form
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
@@ -171,8 +174,8 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
           {showChat && (
             <div className="mt-2">
               <p className="mb-2 text-xs text-violet-800/80">
-                Paste a WhatsApp, email or Upwork thread. AI picks out the client, items, prices, currency and due date — you
-                review before anything is sent.
+                Paste a WhatsApp, email or Upwork thread. AI picks out the client, items, prices, currency and due date
+                — you review before anything is sent.
               </p>
               <textarea
                 className={`${base} border-violet-200 font-mono text-xs`}
@@ -202,7 +205,8 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
           )}
           {!showChat && aiSource && (
             <p className="mt-1 text-xs text-violet-800">
-              Fields shaded purple were filled by {aiSource === "gemini" ? "Gemini" : "the offline parser"}. Check them before sending.
+              Fields shaded purple were filled by {aiSource === "gemini" ? "Gemini" : "the offline parser"}. Check them
+              before sending.
             </p>
           )}
           {warnings.length > 0 && (
@@ -324,7 +328,10 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
 
         <div className="mt-6 flex items-center justify-between">
           <span className="text-sm text-gray-600">
-            Total <strong className="text-gray-900">{currency} {total.toFixed(2)}</strong>
+            Total{" "}
+            <strong className="text-gray-900">
+              {currency} {total.toFixed(2)}
+            </strong>
           </span>
           <button
             disabled={saving}

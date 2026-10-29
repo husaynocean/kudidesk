@@ -7,7 +7,10 @@ import { PayPalError } from "./paypal";
 /** Turns any thrown error into a clean JSON response. */
 export function errorResponse(err: unknown) {
   if (err instanceof ZodError) {
-    return NextResponse.json({ error: `Invalid input: ${err.issues[0]?.message ?? "check the form"}`, details: err.issues }, { status: 400 });
+    return NextResponse.json(
+      { error: `Invalid input: ${err.issues[0]?.message ?? "check the form"}`, details: err.issues },
+      { status: 400 },
+    );
   }
   if (err instanceof PayPalError) {
     return NextResponse.json(
