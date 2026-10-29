@@ -85,7 +85,7 @@ export interface PayPalInvoice {
     currency_code: string;
     note?: string;
     payment_term?: { due_date?: string };
-    metadata?: { recipient_view_url?: string; create_time?: string };
+    metadata?: { recipient_view_url?: string; create_time?: string; last_update_time?: string };
   };
   primary_recipients?: {
     billing_info?: { email_address?: string; name?: { given_name?: string; surname?: string; full_name?: string } };
@@ -93,6 +93,7 @@ export interface PayPalInvoice {
   items?: { name: string; quantity: string; unit_amount: { value: string } }[];
   amount?: { currency_code: string; value: string };
   due_amount?: { currency_code: string; value: string };
+  payments?: { transactions?: { payment_date?: string }[] };
   links?: { href: string; rel: string }[];
 }
 
@@ -149,7 +150,7 @@ export async function createAndSendInvoice(input: NewInvoiceInput) {
 export async function remindInvoice(id: string, note?: string, subject?: string) {
   await paypal(`/v2/invoicing/invoices/${encodeURIComponent(id)}/remind`, {
     method: "POST",
-    body: { subject, note, send_to_invoicer: false, send_to_recipient: true },
+    body: { subject: subject || undefined, note: note || undefined, send_to_invoicer: false, send_to_recipient: true },
   });
 }
 

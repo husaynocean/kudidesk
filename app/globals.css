@@ -19,3 +19,20 @@ body {
   background: #f6f7f5;
   color: #101828;
 }
+
+/* AG Grid row states */
+.kudi-row-paid {
+  background-color: #f3fbf6;
+}
+.kudi-row-just-paid {
+  animation: kudi-paid 3.5s ease-out;
+}
+@keyframes kudi-paid {
+  0%,
+  40% {
+    background-color: #a7f3c7;
+  }
+  100% {
+    background-color: #f3fbf6;
+  }
+}

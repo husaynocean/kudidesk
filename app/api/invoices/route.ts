@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { errorResponse } from "@/lib/api";
+import { hasGemini } from "@/lib/gemini";
 import { createInvoice, getRows, mode } from "@/lib/invoices";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 /** GET /api/invoices — every invoice as a grid row. */
 export async function GET() {
   try {
-    return NextResponse.json({ mode: mode(), rows: await getRows() });
+    return NextResponse.json({ mode: mode(), ai: hasGemini() ? "gemini" : "offline", rows: await getRows() });
   } catch (err) {
     return errorResponse(err);
   }

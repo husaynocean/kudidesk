@@ -12,6 +12,9 @@ export type InvoiceStatus =
   | "UNPAID"
   | "PAYMENT_PENDING";
 
+/** A simpler status the grid, AI and charts work with. */
+export type PaymentState = "Paid" | "Overdue" | "Awaiting" | "Draft" | "Cancelled" | "Refunded";
+
 /** One row in the KudiDesk grid — a flattened view of a PayPal invoice. */
 export interface InvoiceRow {
   id: string;
@@ -30,6 +33,16 @@ export interface InvoiceRow {
   overdue: boolean;
   /** Link the client opens to pay. */
   payLink: string | null;
+  /** Derived fields — handy for filtering, AI queries and charts. */
+  state: PaymentState;
+  /** Days past the due date (unpaid invoices only), otherwise null. */
+  daysOverdue: number | null;
+  /** Best guess from the email domain / currency. */
+  clientCountry: string;
+  /** When the client paid (YYYY-MM-DD), if known. */
+  paidAt: string | null;
+  /** Last time KudiDesk sent a reminder for this invoice (ISO timestamp), this server session. */
+  lastRemindedAt: string | null;
 }
 
 export interface NewInvoiceInput {

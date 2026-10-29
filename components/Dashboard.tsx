@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { GridApi } from "ag-grid-community";
+import AskGrid, { type AskGridHandle } from "./AskGrid";
 import NewInvoiceDialog from "./NewInvoiceDialog";
 import { naira } from "@/lib/format";
 import type { InvoiceRow } from "@/lib/types";
@@ -9,15 +11,18 @@ import type { InvoiceRow } from "@/lib/types";
 // AG Grid touches the DOM, so load it on the client only.
 const InvoiceGrid = dynamic(() => import("./InvoiceGrid"), {
   ssr: false,
-  loading: () => <div className="h-[520px] animate-pulse rounded-xl bg-white" />,
+  loading: () => <div className="h-[560px] animate-pulse rounded-xl bg-white" />,
 });
 
-const PAID = ["PAID", "MARKED_AS_PAID"];
-const UNPAID = ["SENT", "UNPAID", "PARTIALLY_PAID", "PAYMENT_PENDING"];
 
 export default function Dashboard() {
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [mode, setMode] = useState<"paypal" | "demo" | null>(null);
+  const [ai, setAi] = useState<"gemini" | "offline" | null>(null);
+  const [gridApi, setGridApi] = useState<GridApi<InvoiceRow> | null>(null);
+  const [selected, setSelected] = useState<InvoiceRow[]>([]);
+  const [justPaid, setJustPaid] = useState<Set<string>>(new Set());
+  const askRef = useRef<AskGridHandle>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -34,6 +39,7 @@ export default function Dashboard() {
       if (!res.ok) throw new Error(data.error || "Could not load invoices");
       setRows(data.rows);
       setMode(data.mode);
+      setAi(data.ai);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -53,9 +59,9 @@ export default function Dashboard() {
 
   const stats = useMemo(() => {
     const sum = (list: InvoiceRow[]) => list.reduce((s, r) => s + (r.amountNgn ?? 0), 0);
-    const paid = rows.filter((r) => PAID.includes(r.status));
-    const unpaid = rows.filter((r) => UNPAID.includes(r.status));
-    const overdue = unpaid.filter((r) => r.overdue);
+    const paid = rows.filter((r) => r.state === "Paid");
+    const unpaid = rows.filter((r) => r.state === "Awaiting" || r.state === "Overdue");
+    const overdue = unpaid.filter((r) => r.state === "Overdue");
     return {
       received: sum(paid),
       outstanding: sum(unpaid),
@@ -76,12 +82,13 @@ export default function Dashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Reminder failed");
       setToast(`Reminder sent to ${row.clientName}`);
+      load();
     } catch (err) {
       setToast((err as Error).message);
     } finally {
       setRemindingId(null);
     }
-  }, []);
+  }, [load]);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-10">
@@ -99,6 +106,16 @@ export default function Dashboard() {
               }`}
             >
               {mode === "paypal" ? "PayPal Sandbox" : "Demo data"}
+            </span>
+          )}
+          {ai && (
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                ai === "gemini" ? "bg-violet-100 text-violet-800" : "bg-gray-100 text-gray-600"
+              }`}
+              title={ai === "gemini" ? "AI features use Google Gemini" : "Set GEMINI_API_KEY for full AI"}
+            >
+              {ai === "gemini" ? "✨ Gemini" : "AI offline"}
             </span>
           )}
         </div>
@@ -129,9 +146,15 @@ export default function Dashboard() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search client, work, status…"
-              className="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-kudi-500"
+              placeholder="Quick search…"
+              className="w-44 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-kudi-500"
             />
+            <button
+              onClick={() => gridApi?.exportDataAsCsv({ fileName: "kudidesk-invoices.csv" })}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              Export CSV
+            </button>
             <button
               onClick={load}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50"
@@ -142,12 +165,23 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <AskGrid ref={askRef} api={gridApi} rows={rows} />
+
         {error ? (
           <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
         ) : loading && rows.length === 0 ? (
-          <div className="h-[520px] animate-pulse rounded-xl bg-gray-50" />
+          <div className="h-[560px] animate-pulse rounded-xl bg-gray-50" />
         ) : (
-          <InvoiceGrid rows={rows} quickFilter={search} onRemind={remind} remindingId={remindingId} />
+          <InvoiceGrid
+            rows={rows}
+            quickFilter={search}
+            onRemind={remind}
+            remindingId={remindingId}
+            justPaid={justPaid}
+            onReady={setGridApi}
+            onSelectionChange={setSelected}
+            onFilterChange={() => askRef.current?.filtersChanged()}
+          />
         )}
         <p className="mt-3 text-xs text-gray-400">Naira values are approximate (set FX_RATES_NGN in .env.local).</p>
       </section>
