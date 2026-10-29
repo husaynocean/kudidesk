@@ -1,0 +1,2 @@
+# One Solana wallet address per line (max 50). Copy to smart_wallets.txt.
+# The Analyst scores coins higher when these wallets hold them.

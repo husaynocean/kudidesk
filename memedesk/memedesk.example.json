@@ -1,0 +1,13 @@
+{
+  "rpc_url": "https://api.mainnet-beta.solana.com",
+  "paper_balance_usd": 1000,
+  "scan_interval_s": 90,
+  "monitor_interval_s": 15,
+  "trail_pct": 0.08,
+  "max_open_positions": 5,
+  "min_order_usd": 5,
+  "slippage_bps": 50,
+  "fee_bps": 30,
+  "smart_wallets_file": "smart_wallets.txt",
+  "geckoterminal_discovery": true
+}
