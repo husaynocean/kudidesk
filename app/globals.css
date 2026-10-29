@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-kudi-50: #ecfdf3;
+  --color-kudi-100: #d1fadf;
+  --color-kudi-500: #12a150;
+  --color-kudi-600: #0b8a43;
+  --color-kudi-700: #076b34;
+  --color-kudi-900: #053321;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #f6f7f5;
+  color: #101828;
+}
