@@ -77,6 +77,8 @@ interface Props {
   onReady: (api: GridApi<InvoiceRow>) => void;
   onSelectionChange: (rows: InvoiceRow[]) => void;
   onFilterChange: () => void;
+  /** Rows left after filtering — the income chart follows these. */
+  onFilteredRows: (rows: InvoiceRow[]) => void;
 }
 
 export default function InvoiceGrid({
@@ -88,6 +90,7 @@ export default function InvoiceGrid({
   onReady,
   onSelectionChange,
   onFilterChange,
+  onFilteredRows,
 }: Props) {
   const apiRef = useRef<GridApi<InvoiceRow> | null>(null);
   const justPaidRef = useRef(justPaid);
@@ -238,15 +241,17 @@ export default function InvoiceGrid({
   const recomputeTotals = useCallback(() => {
     const api = apiRef.current;
     if (!api) return;
-    let count = 0;
     let ngn = 0;
+    const shown: InvoiceRow[] = [];
     api.forEachNodeAfterFilter((n) => {
       if (!n.data) return;
-      count++;
+      shown.push(n.data);
       ngn += n.data.amountNgn ?? 0;
     });
+    const count = shown.length;
+    onFilteredRows(shown);
     setTotals((t) => (t.count === count && t.ngn === ngn ? t : { count, ngn }));
-  }, []);
+  }, [onFilteredRows]);
 
   const pinnedBottomRowData = useMemo(
     () => [
@@ -265,7 +270,7 @@ export default function InvoiceGrid({
         theme={kudiTheme}
         rowData={rows}
         columnDefs={columnDefs}
-        defaultColDef={{ sortable: true, filter: true, resizable: true, enableCellChangeFlash: true }}
+        defaultColDef={{ sortable: true, filter: true, resizable: true }}
         quickFilterText={quickFilter}
         getRowId={(p) => p.data.id}
         rowSelection={{

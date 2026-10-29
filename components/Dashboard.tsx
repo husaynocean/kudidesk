@@ -10,6 +10,11 @@ import { naira } from "@/lib/format";
 import type { InvoiceRow } from "@/lib/types";
 
 // AG Grid touches the DOM, so load it on the client only.
+const IncomeChart = dynamic(() => import("./IncomeChart"), {
+  ssr: false,
+  loading: () => <div className="mb-6 h-[330px] animate-pulse rounded-2xl bg-white" />,
+});
+
 const InvoiceGrid = dynamic(() => import("./InvoiceGrid"), {
   ssr: false,
   loading: () => <div className="h-[560px] animate-pulse rounded-xl bg-white" />,
@@ -21,6 +26,7 @@ export default function Dashboard() {
   const [ai, setAi] = useState<"gemini" | "offline" | null>(null);
   const [gridApi, setGridApi] = useState<GridApi<InvoiceRow> | null>(null);
   const [selected, setSelected] = useState<InvoiceRow[]>([]);
+  const [shownRows, setShownRows] = useState<InvoiceRow[] | null>(null);
   const [justPaid, setJustPaid] = useState<Set<string>>(new Set());
   const askRef = useRef<AskGridHandle>(null);
   const [chasing, setChasing] = useState<InvoiceRow[] | null>(null);
@@ -143,11 +149,11 @@ export default function Dashboard() {
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-kudi-600 text-lg font-bold text-white">₦</div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">KudiDesk</h1>
-            <p className="text-sm text-gray-500">Every client payment, one desk.</p>
+            <p className="hidden text-sm text-gray-500 sm:block">Every client payment, one desk.</p>
           </div>
           {mode && (
             <span
-              className={`ml-2 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              className={`ml-2 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                 mode === "paypal" ? "bg-kudi-100 text-kudi-700" : "bg-amber-100 text-amber-800"
               }`}
             >
@@ -156,7 +162,7 @@ export default function Dashboard() {
           )}
           {ai && (
             <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                 ai === "gemini" ? "bg-violet-100 text-violet-800" : "bg-gray-100 text-gray-600"
               }`}
               title={ai === "gemini" ? "AI features use Google Gemini" : "Set GEMINI_API_KEY for full AI"}
@@ -207,6 +213,10 @@ export default function Dashboard() {
         />
         <Stat label="Clients" value={String(stats.clients)} />
       </section>
+
+      {rows.length > 0 && (
+        <IncomeChart rows={shownRows ?? rows} filtered={!!shownRows && shownRows.length !== rows.length} />
+      )}
 
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -282,6 +292,7 @@ export default function Dashboard() {
             onReady={setGridApi}
             onSelectionChange={setSelected}
             onFilterChange={() => askRef.current?.filtersChanged()}
+            onFilteredRows={setShownRows}
           />
         )}
         <p className="mt-3 text-xs text-gray-400">Naira values are approximate (set FX_RATES_NGN in .env.local).</p>
