@@ -53,15 +53,15 @@ function ago(iso: string) {
 function StateCell({ data, node }: ICellRendererParams<InvoiceRow>) {
   if (!data || node.rowPinned) return null;
   return (
-    <span className="flex h-full flex-col justify-center leading-tight">
+    <div className="flex flex-col justify-center py-2 leading-tight">
       <span
         title={`PayPal status: ${data.status}`}
         className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ${STATE_STYLE[data.state]}`}
       >
         {data.state.toUpperCase()}
       </span>
-      {data.lastRemindedAt && <span className="mt-0.5 text-[10px] text-gray-400">reminded {ago(data.lastRemindedAt)}</span>}
-    </span>
+      {data.lastRemindedAt && <span className="mt-1 text-[10px] text-gray-400">reminded {ago(data.lastRemindedAt)}</span>}
+    </div>
   );
 }
 
@@ -96,6 +96,11 @@ export default function InvoiceGrid({
     justPaidRef.current = justPaid;
     apiRef.current?.redrawRows();
   }, [justPaid]);
+
+  // "reminded 2m ago" lives outside the cell's value, so refresh the status cells on new data.
+  useEffect(() => {
+    apiRef.current?.refreshCells({ columns: ["state"], force: true });
+  }, [rows]);
 
   const columnDefs = useMemo<ColDef<InvoiceRow>[]>(
     () => [

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GridApi } from "ag-grid-community";
 import AskGrid, { type AskGridHandle } from "./AskGrid";
+import ChaseDialog from "./ChaseDialog";
 import NewInvoiceDialog from "./NewInvoiceDialog";
 import { naira } from "@/lib/format";
 import type { InvoiceRow } from "@/lib/types";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<InvoiceRow[]>([]);
   const [justPaid, setJustPaid] = useState<Set<string>>(new Set());
   const askRef = useRef<AskGridHandle>(null);
+  const [chasing, setChasing] = useState<InvoiceRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -167,6 +169,38 @@ export default function Dashboard() {
 
         <AskGrid ref={askRef} api={gridApi} rows={rows} />
 
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm">
+          <span className="text-gray-600">
+            {selected.length
+              ? `${selected.length} unpaid invoice${selected.length === 1 ? "" : "s"} selected`
+              : "Tick unpaid invoices to chase them, or"}
+          </span>
+          {!selected.length && (
+            <button
+              onClick={() => {
+                gridApi?.forEachNodeAfterFilter((n) => n.setSelected(n.data?.state === "Overdue"));
+              }}
+              disabled={!stats.overdueCount}
+              className="font-medium text-kudi-700 hover:underline disabled:text-gray-400 disabled:no-underline"
+            >
+              select all overdue
+            </button>
+          )}
+          {selected.length > 0 && (
+            <>
+              <button
+                onClick={() => setChasing(selected)}
+                className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+              >
+                ✨ Chase with AI
+              </button>
+              <button onClick={() => gridApi?.deselectAll()} className="text-xs text-gray-500 hover:underline">
+                Clear selection
+              </button>
+            </>
+          )}
+        </div>
+
         {error ? (
           <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
         ) : loading && rows.length === 0 ? (
@@ -195,6 +229,21 @@ export default function Dashboard() {
           load();
         }}
       />
+
+      {chasing && (
+        <ChaseDialog
+          rows={chasing}
+          onClose={() => setChasing(null)}
+          onDone={(sent) => {
+            if (sent)
+              setToast(
+                `${sent} reminder${sent === 1 ? "" : "s"} ${mode === "paypal" ? "sent via PayPal" : "logged (demo mode — nothing emailed)"}`,
+              );
+            gridApi?.deselectAll();
+            load();
+          }}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm text-white shadow-lg">
