@@ -1,0 +1,34 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: Render dashboard → New → Blueprint → pick this repo. Fill in the secret values when prompted.
+services:
+  - type: web
+    name: kudidesk
+    runtime: node
+    plan: free
+    region: frankfurt # closest Render region to Lagos
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # PayPal sandbox app (developer.paypal.com → Apps & Credentials → Sandbox). Leave empty for demo mode.
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_API_BASE
+        value: https://api-m.sandbox.paypal.com
+      # Webhook ID shown after you add https://<service>.onrender.com/api/webhooks/paypal to the sandbox app.
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      # Free key from https://aistudio.google.com/apikey. Leave empty for the offline AI fallback.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      - key: FREELANCER_NAME
+        sync: false
+      - key: FX_RATES_NGN
+        value: '{"USD":1500,"GBP":2000,"EUR":1700,"CAD":1100}'
