@@ -19,24 +19,6 @@ const TLD: Record<string, string> = {
 
 const BY_CURRENCY: Record<string, string> = { GBP: "UK", CAD: "Canada", EUR: "Europe", USD: "USA", NGN: "Nigeria" };
 
-export const FLAGS: Record<string, string> = {
-  UK: "🇬🇧",
-  Germany: "🇩🇪",
-  France: "🇫🇷",
-  Netherlands: "🇳🇱",
-  Ireland: "🇮🇪",
-  Spain: "🇪🇸",
-  Italy: "🇮🇹",
-  Canada: "🇨🇦",
-  Australia: "🇦🇺",
-  USA: "🇺🇸",
-  Nigeria: "🇳🇬",
-  Ghana: "🇬🇭",
-  Kenya: "🇰🇪",
-  "South Africa": "🇿🇦",
-  Europe: "🇪🇺",
-};
-
 export function guessCountry(email: string, currency: string): string {
   const tld = email.toLowerCase().split(".").pop() ?? "";
   return TLD[tld] ?? BY_CURRENCY[currency.toUpperCase()] ?? "Other";

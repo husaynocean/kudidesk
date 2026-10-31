@@ -34,6 +34,7 @@ interface Props {
 export default function ChaseDialog({ rows, onClose, onDone }: Props) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [source, setSource] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [include, setInclude] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<Record<string, { state: SendState; error?: string }>>({});
   const [loading, setLoading] = useState(true);
@@ -54,6 +55,7 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
         if (cancelled) return;
         setDrafts(data.drafts);
         setSource(data.source);
+        setAiError(data.aiError ?? null);
         setInclude(new Set(data.drafts.map((d: Draft) => d.id)));
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
@@ -191,7 +193,9 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
 
         <div className="flex items-center justify-between gap-3 border-t border-gray-100 p-4">
           <span className="text-xs text-gray-400">
-            {source && (source === "gemini" ? "Drafted by Gemini" : "Drafted from templates (no GEMINI_API_KEY)")}
+            {aiError
+              ? `⚠ Gemini unavailable — ${aiError} Drafted from templates.`
+              : source && (source === "gemini" ? "Drafted by Gemini" : "Drafted from templates (no GEMINI_API_KEY)")}
           </span>
           <div className="flex gap-2">
             <button onClick={onClose} className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">

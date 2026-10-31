@@ -12,7 +12,6 @@ import {
   type RowClassRules,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { FLAGS } from "@/lib/country";
 import { money, naira, shortDate } from "@/lib/format";
 import type { InvoiceRow } from "@/lib/types";
 
@@ -130,7 +129,6 @@ export default function InvoiceGrid({
         field: "clientCountry",
         headerName: "Country",
         width: 115,
-        valueFormatter: (p) => (p.value ? `${FLAGS[p.value] ?? "🌍"} ${p.value}` : ""),
       },
       { field: "description", headerName: "Work", minWidth: 200, flex: 1.4, tooltipField: "description" },
       {

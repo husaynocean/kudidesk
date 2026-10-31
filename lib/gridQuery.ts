@@ -192,7 +192,7 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
   const sort: GridQuery["sort"] = [];
 
   // Payment state.
-  if (/\b(unpaid|outstanding|owed|owing|not paid|haven't paid|hasn't paid)\b/.test(t)) {
+  if (/\b(unpaid|outstanding|owed|owing|owes?|not paid|haven't paid|hasn't paid|still due)\b/.test(t)) {
     filters.push(
       { colId: "state", op: "equals", value: "Overdue" },
       { colId: "state", op: "equals", value: "Awaiting" },
@@ -288,7 +288,7 @@ export function parseWithRules(text: string, ctx: QueryContext): GridQuery {
     sort,
     explanation:
       filters.length || sort.length
-        ? "Matched with the offline parser (no GEMINI_API_KEY set)."
+        ? "Matched with the offline parser."
         : "Sorry, I couldn't understand that one without AI.",
   });
 }

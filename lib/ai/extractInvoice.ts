@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { CURRENCIES, CURRENCY_SYMBOLS, isCurrency } from "../currencies";
-import { geminiJson, hasGemini } from "../gemini";
+import { GeminiError, geminiJson, hasGemini } from "../gemini";
 
 /** What the AI hands back to pre-fill the New invoice form. Everything is a suggestion the user reviews. */
 export const InvoiceDraft = z.object({
@@ -52,10 +52,16 @@ Rules:
 export async function extractInvoice(
   chat: string,
   today: string,
-): Promise<{ draft: InvoiceDraft; source: "gemini" | "rules" }> {
+): Promise<{ draft: InvoiceDraft; source: "gemini" | "rules"; aiError?: string }> {
   if (!hasGemini()) return { draft: extractWithRules(chat, today), source: "rules" };
-  const raw = await geminiJson(SYSTEM, `TODAY is ${today} (${weekday(today)}).\n\nCHAT:\n"""\n${chat}\n"""`);
-  return { draft: InvoiceDraft.parse(raw), source: "gemini" };
+  try {
+    const raw = await geminiJson(SYSTEM, `TODAY is ${today} (${weekday(today)}).\n\nCHAT:\n"""\n${chat}\n"""`);
+    return { draft: InvoiceDraft.parse(raw), source: "gemini" };
+  } catch (err) {
+    // Keep working when Gemini is down: fall back to the offline parser and say why.
+    if (!(err instanceof GeminiError)) throw err;
+    return { draft: extractWithRules(chat, today), source: "rules", aiError: err.message };
+  }
 }
 
 function weekday(iso: string) {
@@ -75,7 +81,7 @@ function addDays(iso: string, n: number) {
 }
 
 export function extractWithRules(chat: string, today: string): InvoiceDraft {
-  const warnings = ["Drafted without AI (no GEMINI_API_KEY set) — please check every field."];
+  const warnings = ["Drafted without AI (offline parser) — please check every field."];
   const email = chat.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/)?.[0] ?? null;
 
   // Currency: explicit code first, then symbol.

@@ -31,9 +31,12 @@ const AskGrid = forwardRef<AskGridHandle, Props>(function AskGrid({ api, rows },
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [active, setActive] = useState<{ query: GridQuery; source: string; state: ReturnType<typeof toAgGrid> } | null>(
-    null,
-  );
+  const [active, setActive] = useState<{
+    query: GridQuery;
+    source: string;
+    aiError?: string;
+    state: ReturnType<typeof toAgGrid>;
+  } | null>(null);
   const [showState, setShowState] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -67,7 +70,7 @@ const AskGrid = forwardRef<AskGridHandle, Props>(function AskGrid({ api, rows },
       for (const colId of Object.keys(state.filterModel)) {
         if (!api.getColumn(colId)?.isVisible()) api.setColumnsVisible([colId], true);
       }
-      setActive({ query, source: data.source, state });
+      setActive({ query, source: data.source, aiError: data.aiError, state });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -144,6 +147,11 @@ const AskGrid = forwardRef<AskGridHandle, Props>(function AskGrid({ api, rows },
               {active.source === "gemini" ? "Gemini" : "offline parser"}
             </span>
           </div>
+          {active.aiError && (
+            <p className="mt-1 text-amber-700">
+              ⚠ Gemini unavailable — {active.aiError} Used the offline parser instead.
+            </p>
+          )}
           {showState && (
             <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-gray-900 p-3 text-[11px] leading-relaxed text-gray-100">
               {`api.setFilterModel(${JSON.stringify(active.state.filterModel, null, 2)});\n\napi.applyColumnState(${JSON.stringify(

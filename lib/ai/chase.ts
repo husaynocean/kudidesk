@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { money } from "../format";
-import { geminiJson, hasGemini } from "../gemini";
+import { GeminiError, geminiJson, hasGemini } from "../gemini";
 import type { InvoiceRow } from "../types";
 
 /**
@@ -90,28 +90,35 @@ export async function draftReminders(
   rows: InvoiceRow[],
   all: InvoiceRow[],
   senderName: string,
-): Promise<{ drafts: ReminderDraft[]; source: "gemini" | "templates" }> {
+): Promise<{ drafts: ReminderDraft[]; source: "gemini" | "templates"; aiError?: string }> {
   const contexts = rows.map((r) => ({ ...contextFor(r, all), suggestedTone: pickTone(contextFor(r, all)) }));
 
-  if (hasGemini()) {
-    const raw = await geminiJson(
+  const templates = () => contexts.map((c) => templateDraft(c, c.suggestedTone, senderName));
+  if (!hasGemini()) return { drafts: templates(), source: "templates" };
+
+  let raw: unknown;
+  try {
+    raw = await geminiJson(
       SYSTEM,
       `Freelancer sign-off name: ${senderName || "(none)"}\n\nINVOICES:\n${JSON.stringify(contexts, null, 2)}`,
       0.6,
     );
-    const parsed = z.object({ drafts: z.array(z.unknown()) }).safeParse(raw);
-    const drafts = (parsed.success ? parsed.data.drafts : [])
-      .map((d) => ReminderDraft.safeParse(d))
-      .flatMap((d) => (d.success ? [d.data] : []));
-    // Any invoice the model skipped or mangled gets a template, so every selected row has a draft.
-    const byId = new Map(drafts.filter((d) => rows.some((r) => r.id === d.id)).map((d) => [d.id, d]));
-    return {
-      drafts: contexts.map((c) => byId.get(c.id) ?? templateDraft(c, c.suggestedTone, senderName)),
-      source: "gemini",
-    };
+  } catch (err) {
+    // Gemini down or misconfigured: still give the freelancer drafts to review, and say why.
+    if (!(err instanceof GeminiError)) throw err;
+    return { drafts: templates(), source: "templates", aiError: err.message };
   }
 
-  return { drafts: contexts.map((c) => templateDraft(c, c.suggestedTone, senderName)), source: "templates" };
+  const parsed = z.object({ drafts: z.array(z.unknown()) }).safeParse(raw);
+  const drafts = (parsed.success ? parsed.data.drafts : [])
+    .map((d) => ReminderDraft.safeParse(d))
+    .flatMap((d) => (d.success ? [d.data] : []));
+  // Any invoice the model skipped or mangled gets a template, so every selected row has a draft.
+  const byId = new Map(drafts.filter((d) => rows.some((r) => r.id === d.id)).map((d) => [d.id, d]));
+  return {
+    drafts: contexts.map((c) => byId.get(c.id) ?? templateDraft(c, c.suggestedTone, senderName)),
+    source: "gemini",
+  };
 }
 
 /* ------------------------- template fallback ------------------------- */

@@ -100,7 +100,11 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
       if (d.note) (setNote(d.note), filled.add("note"));
       if (d.items.length) (setItems(d.items), filled.add("items"));
       setAiFields(filled);
-      setWarnings(d.warnings);
+      setWarnings(
+        data.aiError
+          ? [`Gemini unavailable — ${data.aiError} Used the offline parser instead.`, ...d.warnings]
+          : d.warnings,
+      );
       setAiSource(data.source);
       setShowChat(false);
     } catch (err) {

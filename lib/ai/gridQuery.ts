@@ -1,5 +1,5 @@
 import "server-only";
-import { geminiJson, hasGemini } from "../gemini";
+import { GeminiError, geminiJson, hasGemini } from "../gemini";
 import { GRID_COLUMNS, GridQuery, OPS, parseWithRules, sanitize, type QueryContext } from "../gridQuery";
 
 const SYSTEM = `You turn a freelancer's plain-English question about their invoices into a filter + sort for a data grid.
@@ -35,7 +35,7 @@ Rules:
 export async function askGrid(
   question: string,
   ctx: QueryContext,
-): Promise<{ query: GridQuery; source: "gemini" | "rules" }> {
+): Promise<{ query: GridQuery; source: "gemini" | "rules"; aiError?: string }> {
   if (!hasGemini()) return { query: parseWithRules(question, ctx), source: "rules" };
 
   const prompt = `TODAY: ${ctx.today}
@@ -43,7 +43,13 @@ Known clients: ${ctx.clients.join(", ") || "none"}
 Known countries: ${ctx.countries.join(", ") || "none"}
 
 QUESTION: ${question}`;
-  const raw = await geminiJson(SYSTEM, prompt, 0);
+  let raw: unknown;
+  try {
+    raw = await geminiJson(SYSTEM, prompt, 0);
+  } catch (err) {
+    if (!(err instanceof GeminiError)) throw err;
+    return { query: parseWithRules(question, ctx), source: "rules", aiError: err.message };
+  }
   const parsed = GridQuery.safeParse(raw);
   if (!parsed.success) return { query: parseWithRules(question, ctx), source: "rules" };
   return { query: sanitize(parsed.data), source: "gemini" };
