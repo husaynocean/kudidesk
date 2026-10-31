@@ -70,7 +70,7 @@ cp .env.example .env.local   # all values optional
 npm run dev
 ```
 
-Open http://localhost:3000, then http://localhost:3000/api/health to see which mode you're in.
+Open http://localhost:3000, then http://localhost:3000/api/health to see which mode you're in. Add `?check=ai` to that URL to test the Gemini connection.
 
 ### 1. Turn on the AI (Gemini, free)
 
@@ -142,6 +142,7 @@ Note: the free plan sleeps after inactivity, so the first request can take a lit
 | `PAYPAL_WEBHOOK_ID` | empty | Turns on webhook signature verification |
 | `GEMINI_API_KEY` | empty → offline AI | Google AI Studio key |
 | `GEMINI_MODEL` | `gemini-flash-latest` | Pin a specific Gemini model |
+| `GEMINI_FALLBACK_MODELS` | `gemini-flash-lite-latest,gemini-2.5-flash` | Tried in order when the main model is busy (503), rate-limited (429) or missing (404) |
 | `FREELANCER_NAME` | empty | Sign-off name used in AI reminders |
 | `FX_RATES_NGN` | `{"USD":1500,"GBP":2000,"EUR":1700,"CAD":1100}` | Approximate naira per unit of each currency |
 
