@@ -1,4 +1,9 @@
 import "server-only";
+import dns from "node:dns";
+
+// Some home/mobile networks advertise IPv6 but can't route it, which makes requests hang.
+// Prefer IPv4 so calls to Google don't sit there until they time out.
+dns.setDefaultResultOrder("ipv4first");
 
 /**
  * Minimal Google Gemini client (REST, no SDK).
@@ -6,6 +11,8 @@ import "server-only";
  */
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
+
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 45_000;
 
 export function hasGemini() {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -45,7 +52,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
         : { "Content-Type": "application/json", "x-goog-api-key": key },
       body,
       cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
   let res: Response;
@@ -56,7 +63,10 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
   } catch (err) {
     // Network-level failure (no internet, VPN/firewall, DNS, timeout, bad characters in the key).
     const e = err as Error & { cause?: { code?: string; message?: string } };
-    const detail = e.name === "TimeoutError" ? "timed out after 30s" : (e.cause?.code ?? e.cause?.message ?? e.message);
+    const detail =
+      e.name === "TimeoutError"
+        ? `timed out after ${TIMEOUT_MS / 1000}s`
+        : (e.cause?.code ?? e.cause?.message ?? e.message);
     console.error("[gemini] request failed:", e.message, e.cause ?? "");
     throw new GeminiError(`Couldn't reach Gemini (${detail}).`, 502);
   }
@@ -85,5 +95,16 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
     return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch {
     throw new GeminiError("Gemini returned malformed JSON.", 502);
+  }
+}
+
+/** Tiny round-trip used by /api/health?check=ai to test the connection and key. */
+export async function pingGemini(): Promise<{ ok: boolean; ms: number; detail: string }> {
+  const start = Date.now();
+  try {
+    await geminiJson('Reply with {"ok":true}', "ping", 0);
+    return { ok: true, ms: Date.now() - start, detail: "Gemini answered ✔" };
+  } catch (err) {
+    return { ok: false, ms: Date.now() - start, detail: (err as Error).message };
   }
 }
