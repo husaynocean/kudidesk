@@ -12,7 +12,8 @@ dns.setDefaultResultOrder("ipv4first");
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 45_000;
+// Per request. Several models may be tried, so keep each wait fairly short.
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 20_000;
 
 export function hasGemini() {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -88,14 +89,16 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
           res = await call(model);
         }
       } catch (err) {
-        // Network-level failure (no internet, VPN/firewall, DNS, timeout, bad characters in the key).
+        // Network-level failure or no answer in time. A busy model can accept the request and then
+        // stall, so move on to the next (lighter) model rather than giving up straight away.
         const e = err as Error & { cause?: { code?: string; message?: string } };
         const detail =
           e.name === "TimeoutError"
-            ? `timed out after ${TIMEOUT_MS / 1000}s`
+            ? `no answer within ${TIMEOUT_MS / 1000}s`
             : (e.cause?.code ?? e.cause?.message ?? e.message);
         console.error("[gemini] request failed:", model, e.message, e.cause ?? "");
-        throw new GeminiError(`Couldn't reach Gemini (${detail}).`, 502);
+        lastError = new GeminiError(`Couldn't reach Gemini (${detail}).`, 502);
+        break;
       }
 
       const data = await res.json().catch(() => ({}));
