@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CURRENCIES } from "@/lib/currencies";
+import { postJson } from "@/lib/client";
 
 interface Props {
   open: boolean;
@@ -84,13 +85,10 @@ export default function NewInvoiceDialog({ open, onClose, onCreated }: Props) {
     setDrafting(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/extract-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat, today: localToday() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not read the chat");
+      const data = await postJson<{ draft: Draft; source: "gemini" | "rules"; aiError?: string }>(
+        "/api/ai/extract-invoice",
+        { chat, today: localToday() },
+      );
       const d: Draft = data.draft;
       const filled = new Set<Field>();
       if (d.clientName) (setClientName(d.clientName), filled.add("clientName"));

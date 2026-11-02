@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
 import type { InvoiceRow } from "@/lib/types";
+import { postJson } from "@/lib/client";
 
 type Tone = "heads-up" | "gentle" | "firm" | "final";
 interface Draft {
@@ -45,13 +46,9 @@ export default function ChaseDialog({ rows, onClose, onDone }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/ai/chase", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: rows.map((r) => r.id) }),
+        const data = await postJson<{ drafts: Draft[]; source: string; aiError?: string }>("/api/ai/chase", {
+          ids: rows.map((r) => r.id),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Couldn't draft reminders");
         if (cancelled) return;
         setDrafts(data.drafts);
         setSource(data.source);

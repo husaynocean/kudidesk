@@ -12,8 +12,10 @@ dns.setDefaultResultOrder("ipv4first");
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Per request. Several models may be tried, so keep each wait fairly short.
-const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 20_000;
+// Per model attempt. Several models may be tried, so keep each wait fairly short.
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 15_000;
+// Hard cap on one AI request across all models and retries. After this the feature falls back offline.
+const BUDGET_MS = Number(process.env.GEMINI_BUDGET_MS) || 25_000;
 
 export function hasGemini() {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -75,6 +77,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
   const key = process.env.GEMINI_API_KEY!.trim();
   let keyInQuery = false;
 
+  const deadline = Date.now() + BUDGET_MS;
   const call = (model: string) => {
     const url = `${BASE}/models/${model}:generateContent`;
     return fetch(keyInQuery ? `${url}?key=${encodeURIComponent(key)}` : url, {
@@ -84,7 +87,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
         : { "Content-Type": "application/json", "x-goog-api-key": key },
       body,
       cache: "no-store",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(Math.max(1_000, Math.min(TIMEOUT_MS, deadline - Date.now()))),
     });
   };
 
@@ -92,6 +95,9 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
 
   for (const model of usableModels()) {
     for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() >= deadline - 1_000) {
+        throw new GeminiError(`Gemini didn't answer within ${BUDGET_MS / 1000}s (${lastError.message})`, 502);
+      }
       let res: Response;
       try {
         res = await call(model);
@@ -105,9 +111,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
         // stall, so move on to the next (lighter) model rather than giving up straight away.
         const e = err as Error & { cause?: { code?: string; message?: string } };
         const detail =
-          e.name === "TimeoutError"
-            ? `no answer within ${TIMEOUT_MS / 1000}s`
-            : (e.cause?.code ?? e.cause?.message ?? e.message);
+          e.name === "TimeoutError" ? "no answer in time" : (e.cause?.code ?? e.cause?.message ?? e.message);
         console.error("[gemini] request failed:", model, e.message, e.cause ?? "");
         lastError = new GeminiError(`Couldn't reach Gemini (${detail}).`, 502);
         bench(model); // skip this model for a few minutes so the next click is fast

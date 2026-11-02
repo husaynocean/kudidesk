@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import type { GridApi } from "ag-grid-community";
 import { describe, toAgGrid, type GridQuery } from "@/lib/gridQuery";
 import type { InvoiceRow } from "@/lib/types";
+import { postJson } from "@/lib/client";
 
 const EXAMPLES = [
   "unpaid UK clients over £200, oldest first",
@@ -49,18 +50,12 @@ const AskGrid = forwardRef<AskGridHandle, Props>(function AskGrid({ api, rows },
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/grid-query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: q,
-          today: localToday(),
-          clients: [...new Set(rows.map((r) => r.clientName))],
-          countries: [...new Set(rows.map((r) => r.clientCountry))],
-        }),
+      const data = await postJson<{ query: GridQuery; source: string; aiError?: string }>("/api/ai/grid-query", {
+        question: q,
+        today: localToday(),
+        clients: [...new Set(rows.map((r) => r.clientName))],
+        countries: [...new Set(rows.map((r) => r.clientCountry))],
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Couldn't answer that");
       const query: GridQuery = data.query;
       const state = toAgGrid(query);
 
