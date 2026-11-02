@@ -44,6 +44,18 @@ export function geminiModels() {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Models that recently stalled or were overloaded: model → time we can try it again. */
+const benched = new Map<string, number>();
+const BENCH_MS = 5 * 60_000;
+const bench = (model: string) => benched.set(model, Date.now() + BENCH_MS);
+
+/** Models to use right now: skip benched ones (unless every model is benched). */
+function usableModels() {
+  const all = geminiModels();
+  const ready = all.filter((m) => (benched.get(m) ?? 0) < Date.now());
+  return ready.length ? ready : all;
+}
+
 /** The last model that answered, shown on /api/health. */
 let lastModel: string | null = null;
 export const lastGeminiModel = () => lastModel;
@@ -78,7 +90,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
 
   let lastError = new GeminiError("Gemini is unavailable right now.", 502);
 
-  for (const model of geminiModels()) {
+  for (const model of usableModels()) {
     for (let attempt = 0; attempt < 2; attempt++) {
       let res: Response;
       try {
@@ -98,6 +110,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
             : (e.cause?.code ?? e.cause?.message ?? e.message);
         console.error("[gemini] request failed:", model, e.message, e.cause ?? "");
         lastError = new GeminiError(`Couldn't reach Gemini (${detail}).`, 502);
+        bench(model); // skip this model for a few minutes so the next click is fast
         break;
       }
 
@@ -113,6 +126,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
         try {
           const parsed = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
           lastModel = model;
+          benched.delete(model);
           return parsed;
         } catch {
           lastError = new GeminiError("Gemini returned malformed JSON.", 502);
@@ -138,6 +152,7 @@ export async function geminiJson(system: string, prompt: string, temperature = 0
       }
       lastError = new GeminiError(`Gemini is busy right now (${res.status}) — try again in a moment.`, 502);
       if (attempt === 0) await sleep(1200);
+      else bench(model);
     }
   }
   throw lastError;
