@@ -119,7 +119,9 @@ export default function IncomeChart({ rows, filtered }: { rows: InvoiceRow[]; fi
         <AgCharts options={options} />
       ) : (
         <div className="grid h-[260px] place-items-center text-sm text-gray-400">
-          No payments in the last six months yet.
+          {filtered
+            ? "No paid invoices among the rows shown — clear the grid filters to see all income."
+            : "No payments in the last six months yet."}
         </div>
       )}
     </section>

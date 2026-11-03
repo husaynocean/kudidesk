@@ -30,6 +30,8 @@ interface InvoiceContext {
   work: string;
   amount: string;
   dueDate: string | null;
+  /** Plain-English timing the model must use as-is, e.g. "due in 8 days (2026-11-11)". */
+  timing: string;
   daysOverdue: number;
   hasPayLink: boolean;
   remindedBefore: boolean;
@@ -46,6 +48,7 @@ function contextFor(row: InvoiceRow, all: InvoiceRow[]): InvoiceContext {
     work: row.description,
     amount: money(row.amount, row.currency),
     dueDate: row.dueDate,
+    timing: timingOf(row),
     daysOverdue: row.daysOverdue ?? 0,
     hasPayLink: !!row.payLink,
     remindedBefore: !!row.lastRemindedAt,
@@ -55,6 +58,16 @@ function contextFor(row: InvoiceRow, all: InvoiceRow[]): InvoiceContext {
       otherUnpaid: others.filter((r) => r.state === "Overdue" || r.state === "Awaiting").length,
     },
   };
+}
+
+function timingOf(row: InvoiceRow): string {
+  if (!row.dueDate) return "no due date set";
+  if (row.daysOverdue)
+    return `${row.daysOverdue} day${row.daysOverdue === 1 ? "" : "s"} overdue (was due ${row.dueDate})`;
+  const today = new Date().toISOString().slice(0, 10);
+  const days = Math.round((Date.parse(row.dueDate) - Date.parse(today)) / 86_400_000);
+  if (days <= 0) return `due today (${row.dueDate})`;
+  return `due in ${days} day${days === 1 ? "" : "s"} (${row.dueDate})`;
 }
 
 export function pickTone(c: InvoiceContext): Tone {
@@ -71,7 +84,8 @@ so the note must NOT include links, bank details, or the invoice total table.
 For each invoice, write:
 - "subject": max 80 characters, specific (mention the invoice number or the work).
 - "note": 2–4 short sentences, plain text, no greeting line like "Dear Sir". Start with the client's first name.
-  Mention the work and amount. End with the freelancer's sign-off name if one is given, otherwise no name.
+  Mention the work and amount, and describe timing using the invoice's "timing" field exactly — never say "due today"
+  unless timing says so. End with the freelancer's sign-off name if one is given, otherwise no name.
 - "tone": one of heads-up | gentle | firm | final — use the suggestedTone unless the history clearly says otherwise.
 - "why": one short sentence telling the freelancer why you chose this tone.
 
@@ -100,7 +114,7 @@ export async function draftReminders(
   try {
     raw = await geminiJson(
       SYSTEM,
-      `Freelancer sign-off name: ${senderName || "(none)"}\n\nINVOICES:\n${JSON.stringify(contexts, null, 2)}`,
+      `TODAY: ${new Date().toISOString().slice(0, 10)}\nFreelancer sign-off name: ${senderName || "(none)"}\n\nINVOICES:\n${JSON.stringify(contexts, null, 2)}`,
       0.6,
     );
   } catch (err) {
@@ -136,7 +150,7 @@ function templateDraft(c: InvoiceContext, tone: Tone, sender: string): ReminderD
   const byTone: Record<Tone, { subject: string; note: string; why: string }> = {
     "heads-up": {
       subject: `Quick heads-up: invoice ${c.invoice}`,
-      note: `Hi ${first}, just a friendly heads-up that invoice ${c.invoice} for ${c.work} (${c.amount}) is due${c.dueDate ? ` on ${c.dueDate}` : " soon"}. You can pay securely through PayPal using the button in this email.${thanks}`,
+      note: `Hi ${first}, just a friendly heads-up that invoice ${c.invoice} for ${c.work} (${c.amount}) is ${c.timing.replace(/ \(.*\)$/, "")}${c.dueDate ? ` (${c.dueDate})` : ""}. You can pay securely through PayPal using the button in this email.${thanks}`,
       why: "Not overdue yet, so a light-touch heads-up.",
     },
     gentle: {
