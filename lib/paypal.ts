@@ -67,7 +67,11 @@ export async function paypal<T = unknown>(
     const issue = data?.details?.[0]?.issue;
     const description = data?.details?.[0]?.description || data?.message || res.statusText;
     console.error("[paypal]", res.status, path, issue, data?.debug_id);
-    throw new PayPalError(description, res.status, issue, data?.debug_id);
+    const hint =
+      res.status === 403
+        ? " Your sandbox app probably doesn't have Invoicing enabled: developer.paypal.com → Apps & Credentials → your app → Features → tick Invoicing, save, then restart KudiDesk."
+        : "";
+    throw new PayPalError(description + hint, res.status, issue, data?.debug_id);
   }
   return data as T;
 }
