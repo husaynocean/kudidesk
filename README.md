@@ -53,7 +53,7 @@ You can run everything with **no keys at all**: KudiDesk starts in **Demo data**
 
 - **Next.js 15** (App Router, TypeScript), **Tailwind CSS 4**
 - **PayPal REST APIs** (sandbox): OAuth2, Invoicing v2 (create, send, list, get, remind), Webhooks (verify signature)
-- **Google Gemini API** (REST, JSON mode). The default model is `gemini-flash-latest`.
+- **Google Gemini API** (REST, JSON mode). The default model is `gemini-flash-lite-latest`, with automatic fallback to other Flash models.
 - **AG Grid Community 36** and **AG Charts Community 14**
 - **Zod** to validate every request and every AI response
 - **Render** for hosting (`render.yaml` Blueprint)
@@ -142,8 +142,8 @@ Note: the free plan sleeps after inactivity, so the first request can take a lit
 | `PAYPAL_API_BASE` | `https://api-m.sandbox.paypal.com` | PayPal API base URL |
 | `PAYPAL_WEBHOOK_ID` | empty | Turns on webhook signature verification |
 | `GEMINI_API_KEY` | empty → offline AI | Google AI Studio key |
-| `GEMINI_MODEL` | `gemini-flash-latest` | Pin a specific Gemini model |
-| `GEMINI_FALLBACK_MODELS` | `gemini-flash-lite-latest,gemini-2.5-flash` | Tried in order when the main model is busy (503), rate-limited (429) or missing (404) |
+| `GEMINI_MODEL` | `gemini-flash-lite-latest` | Pin a specific Gemini model |
+| `GEMINI_FALLBACK_MODELS` | `gemini-flash-latest,gemini-2.5-flash` | Tried in order when the main model is busy (503), rate-limited (429) or missing (404) |
 | `FREELANCER_NAME` | empty | Sign-off name used in AI reminders |
 | `FX_RATES_NGN` | `{"USD":1500,"GBP":2000,"EUR":1700,"CAD":1100}` | Approximate naira per unit of each currency |
 

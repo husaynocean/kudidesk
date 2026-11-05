@@ -22,8 +22,8 @@ export function hasGemini() {
 }
 
 export function geminiModel() {
-  // "gemini-flash-latest" always points at Google's current Flash model.
-  return process.env.GEMINI_MODEL || "gemini-flash-latest";
+  // Google's current Flash-Lite: fast, free-tier friendly, and plenty for KudiDesk's short JSON tasks.
+  return process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 }
 
 export class GeminiError extends Error {
@@ -37,7 +37,7 @@ export class GeminiError extends Error {
 
 /** Models to try in order: GEMINI_MODEL first, then lighter fallbacks for when it's overloaded. */
 export function geminiModels() {
-  const fallbacks = (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-flash-lite-latest,gemini-2.5-flash")
+  const fallbacks = (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-flash-latest,gemini-2.5-flash")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
