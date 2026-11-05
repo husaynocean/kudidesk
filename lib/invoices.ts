@@ -57,6 +57,19 @@ function itemsTotal(items: { quantity: string | number; unit_amount?: { value: s
   return items.reduce((sum, i) => sum + Number(i.quantity) * Number(i.unit_amount?.value ?? i.unitAmount ?? 0), 0);
 }
 
+/**
+ * The client's "view and pay" page. The list API doesn't always include it, so build it from the
+ * invoice id (INV2-ABCD-EFGH-… → /invoice/p/#ABCDEFGH…) for invoices that have been sent.
+ */
+function payerViewUrl(inv: PayPalInvoice): string | null {
+  if (inv.status === "DRAFT" || inv.status === "CANCELLED") return null;
+  const host =
+    (process.env.PAYPAL_API_BASE ?? "").includes("sandbox") || !process.env.PAYPAL_API_BASE
+      ? "https://www.sandbox.paypal.com"
+      : "https://www.paypal.com";
+  return `${host}/invoice/p/#${inv.id.replace(/^INV2-/, "").replace(/-/g, "")}`;
+}
+
 function fromPayPal(inv: PayPalInvoice): InvoiceRow {
   const billing = inv.primary_recipients?.[0]?.billing_info;
   const name = billing?.name;
@@ -75,7 +88,7 @@ function fromPayPal(inv: PayPalInvoice): InvoiceRow {
     status: inv.status as InvoiceStatus,
     issuedAt: inv.detail.invoice_date ?? inv.detail.metadata?.create_time?.slice(0, 10) ?? "",
     dueDate: inv.detail.payment_term?.due_date ?? null,
-    payLink: inv.detail.metadata?.recipient_view_url ?? null,
+    payLink: inv.detail.metadata?.recipient_view_url ?? payerViewUrl(inv),
     paidAt:
       inv.status === "PAID" || inv.status === "MARKED_AS_PAID"
         ? (inv.payments?.transactions?.at(-1)?.payment_date ?? inv.detail.metadata?.last_update_time ?? "").slice(
