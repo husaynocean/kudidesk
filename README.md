@@ -11,14 +11,18 @@ Since January 2026, Nigerians can receive PayPal payments, paid out through Paga
 
 > Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com) (Oct–Nov 2026). Entered for Best Use of PayPal + AI / Agentic Commerce, Best Use of AG Grid, and Best Use of Render.
 
+**Live demo:** https://kudidesk-z3p7.onrender.com (PayPal sandbox + Gemini, hosted on Render's free plan, so the first visit can take up to a minute to wake up)
+
 ## For judges: a 3-minute tour
 
-You can run everything with **no keys at all**: KudiDesk starts in **Demo data** mode with six months of sample invoices, and the AI features fall back to an offline parser. Add a free Gemini key to see the real AI. Add PayPal sandbox keys to run against PayPal.
+**On the live site** (real PayPal sandbox invoices):
 
-1. **Ask the grid:** click the chip `unpaid UK clients over £200, oldest first`. The grid filters and sorts, and the column filter icons light up. Click **View AG Grid state** to see the `setFilterModel` and `applyColumnState` calls the AI produced. The income chart redraws for the filtered rows.
-2. **Chase:** click **select all overdue**, then **✨ Chase with AI**. Each draft has a tone (heads-up, gentle, firm or final) and a one-line reason. Edit or untick any draft, then click **Send … via PayPal**. Each row then shows "reminded just now".
-3. **Get paid:** click **Simulate a client payment**. This sends a fake `INVOICING.INVOICE.PAID` webhook through the real handler. The row flashes green and a 💸 toast shows the naira value. With PayPal keys, paying a real sandbox invoice does the same thing through a real webhook.
-4. **Invoice from a chat:** click **+ New invoice → Use a sample chat → Draft invoice**. AI-filled fields are shaded purple until you edit them, and anything ambiguous is listed as a warning.
+1. **Ask the grid:** type `what's still unpaid, biggest first` or click an example chip. The grid filters and sorts, and the column filter icons light up. Click **View AG Grid state** to see the `setFilterModel` and `applyColumnState` calls Gemini produced. The income chart redraws for the filtered rows.
+2. **Invoice from a chat:** click **+ New invoice → Use a sample chat → Draft invoice**. Gemini fills the form (purple fields) and flags the negotiated price. Use any `@example.com` address as the client: sandbox invoices never email real people. Click **Create & send** to send a real PayPal sandbox invoice.
+3. **Chase:** tick an unpaid invoice (or **select all overdue**), then click **✨ Chase with AI**. Each draft has a tone (heads-up, gentle, firm or final) and the agent's reason. Edit it, then send it through PayPal's remind API.
+4. **Get paid:** on an unpaid row, click **Mark paid** (for a client who paid by bank transfer or Paga). KudiDesk records the payment on the PayPal invoice, PayPal fires `INVOICING.INVOICE.PAID`, and the row flashes green with a 💸 toast in naira. Paying a sandbox invoice through its **Pay link** also triggers the webhook.
+
+**Locally with no keys** (demo mode): `npm install && npm run dev`. KudiDesk starts with six months of sample invoices, overdue clients to chase, and a **Simulate a client payment** button that sends a fake webhook through the real handler. Without a Gemini key, the AI features fall back to an offline parser and templates.
 
 ## Features
 
