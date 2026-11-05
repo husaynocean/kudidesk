@@ -142,6 +142,25 @@ export default function Dashboard() {
     [load],
   );
 
+  const markPaid = useCallback(async (row: InvoiceRow) => {
+    if (
+      !window.confirm(`Record that ${row.clientName} paid ${row.number} outside PayPal (bank transfer, Paga or cash)?`)
+    )
+      return;
+    try {
+      const res = await fetch(`/api/invoices/${encodeURIComponent(row.id)}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: "BANK_TRANSFER" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't record the payment");
+      // The live event feed refreshes the grid and flashes the row green.
+    } catch (err) {
+      setToast((err as Error).message);
+    }
+  }, []);
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-10">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -287,6 +306,7 @@ export default function Dashboard() {
             rows={rows}
             quickFilter={search}
             onRemind={remind}
+            onMarkPaid={markPaid}
             remindingId={remindingId}
             justPaid={justPaid}
             onReady={setGridApi}

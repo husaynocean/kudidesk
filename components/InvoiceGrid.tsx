@@ -70,6 +70,8 @@ interface Props {
   rows: InvoiceRow[];
   quickFilter: string;
   onRemind: (row: InvoiceRow) => void;
+  /** Record a payment received outside PayPal checkout (bank transfer, Paga, cash). */
+  onMarkPaid: (row: InvoiceRow) => void;
   remindingId: string | null;
   /** Rows that just got paid — highlighted for a few seconds. */
   justPaid: Set<string>;
@@ -84,6 +86,7 @@ export default function InvoiceGrid({
   rows,
   quickFilter,
   onRemind,
+  onMarkPaid,
   remindingId,
   justPaid,
   onReady,
@@ -198,7 +201,7 @@ export default function InvoiceGrid({
       {
         headerName: "",
         colId: "actions",
-        width: 130,
+        width: 230,
         sortable: false,
         filter: false,
         cellRenderer: ({ data, node }: ICellRendererParams<InvoiceRow>) => {
@@ -214,6 +217,15 @@ export default function InvoiceGrid({
                   {remindingId === data.id ? "Sending…" : "Remind"}
                 </button>
               )}
+              {isChaseable(data) && (
+                <button
+                  onClick={() => onMarkPaid(data)}
+                  title="Client paid by bank transfer, Paga or cash"
+                  className="text-xs text-gray-500 hover:text-kudi-700 hover:underline"
+                >
+                  Mark paid
+                </button>
+              )}
               {data.payLink && (
                 <a href={data.payLink} target="_blank" rel="noreferrer" className="text-xs text-kudi-700 underline">
                   Pay link
@@ -224,7 +236,7 @@ export default function InvoiceGrid({
         },
       },
     ],
-    [onRemind, remindingId],
+    [onRemind, onMarkPaid, remindingId],
   );
 
   const rowClassRules = useMemo<RowClassRules<InvoiceRow>>(

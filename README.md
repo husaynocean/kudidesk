@@ -125,6 +125,7 @@ Note: the free plan sleeps after inactivity, so the first request can take a lit
 | GET | `/api/health` | Mode (demo / paypal), PayPal credential check, AI and webhook status |
 | GET | `/api/invoices` | Every invoice as a grid row |
 | POST | `/api/invoices` | Create and send a PayPal invoice |
+| POST | `/api/invoices/:id/mark-paid` | Record a payment received outside PayPal checkout (bank transfer, Paga, cash) on the PayPal invoice |
 | POST | `/api/invoices/:id/remind` | Send a PayPal reminder with a custom subject and note |
 | POST | `/api/ai/extract-invoice` | Chat text → invoice draft (sends nothing) |
 | POST | `/api/ai/grid-query` | Question → validated grid filter and sort |

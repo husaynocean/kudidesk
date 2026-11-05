@@ -5,6 +5,7 @@ import {
   getInvoice,
   hasPayPalCredentials,
   listInvoices,
+  recordExternalPayment,
   remindInvoice,
   type PayPalInvoice,
 } from "./paypal";
@@ -191,6 +192,12 @@ export async function sendReminder(id: string, note?: string, subject?: string) 
   if (mode() === "paypal") await remindInvoice(id, note, subject);
   else if (!demo.some((d) => d.id === id)) throw new Error(`No demo invoice ${id}`);
   reminders.set(id, new Date().toISOString());
+}
+
+/** Record that the client paid outside PayPal checkout (bank transfer, Paga, cash). */
+export async function markPaid(id: string, method: "BANK_TRANSFER" | "CASH" | "OTHER" = "BANK_TRANSFER") {
+  if (mode() === "paypal") await recordExternalPayment(id, method);
+  else if (!markDemoPaid(id)) throw new Error(`No demo invoice ${id}`);
 }
 
 /** Demo only: mark an invoice paid, as if the client paid through PayPal. */

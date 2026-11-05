@@ -156,6 +156,25 @@ export async function remindInvoice(id: string, note?: string, subject?: string)
   });
 }
 
+/**
+ * Records a payment received outside PayPal (bank transfer, Paga, cash) against the invoice,
+ * which marks it paid in PayPal and fires the INVOICING.INVOICE.PAID webhook.
+ */
+export async function recordExternalPayment(id: string, method: "BANK_TRANSFER" | "CASH" | "OTHER") {
+  const inv = await getInvoice(id);
+  const due = inv.due_amount ?? inv.amount;
+  if (!due) throw new PayPalError("This invoice has no amount due.", 400);
+  await paypal(`/v2/invoicing/invoices/${encodeURIComponent(id)}/payments`, {
+    method: "POST",
+    body: {
+      method,
+      payment_date: new Date().toISOString().slice(0, 10),
+      amount: { currency_code: due.currency_code, value: due.value },
+      note: "Recorded in KudiDesk",
+    },
+  });
+}
+
 /* ----------------------------- Webhooks ----------------------------- */
 
 /**
