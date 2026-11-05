@@ -161,8 +161,34 @@ const demo = g.__kudiDemo;
 
 export async function getRows(): Promise<InvoiceRow[]> {
   if (mode() === "demo") return demo.map(finishRow).sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
-  const invoices = await listInvoices();
-  return invoices.map(fromPayPal);
+  const rows = (await listInvoices()).map(fromPayPal);
+  await fillPaidDates(rows);
+  return rows;
+}
+
+/** Paid dates we've looked up: invoice id → YYYY-MM-DD. Paid invoices don't change, so this never goes stale. */
+const g1 = globalThis as unknown as { __kudiPaidDates?: Map<string, string> };
+const paidDates = (g1.__kudiPaidDates ??= new Map());
+
+/**
+ * PayPal's invoice list often leaves out payment details, so the income chart would have no dates.
+ * For paid invoices without a date, read the full invoice once (a few at a time) and remember it.
+ * If PayPal still gives no date, fall back to the first time KudiDesk saw it as paid.
+ */
+async function fillPaidDates(rows: InvoiceRow[]) {
+  const missing = rows.filter((r) => r.state === "Paid" && !r.paidAt);
+  for (let i = 0; i < missing.length; i += 5) {
+    await Promise.all(
+      missing.slice(i, i + 5).map(async (r) => {
+        if (!paidDates.has(r.id)) {
+          const full = await getInvoice(r.id).catch(() => null);
+          const date = full && fromPayPal(full).paidAt;
+          paidDates.set(r.id, date || today());
+        }
+        r.paidAt = paidDates.get(r.id)!;
+      }),
+    );
+  }
 }
 
 export async function createInvoice(input: NewInvoiceInput): Promise<{ id: string; payLink: string | null }> {
