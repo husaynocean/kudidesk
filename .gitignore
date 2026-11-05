@@ -150,3 +150,8 @@ vite.config.ts.timestamp-*
 
 # keep the example env file
 !.env.example
+
+# demo recordings
+demo-video/
+*.mp4
+*.webm
