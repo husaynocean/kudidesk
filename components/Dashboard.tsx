@@ -165,7 +165,8 @@ export default function Dashboard() {
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-10">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-kudi-600 text-lg font-bold text-white">₦</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" className="h-10 w-10" />
           <div>
             <h1 className="text-xl font-bold tracking-tight">KudiDesk</h1>
             <p className="hidden text-sm text-gray-500 sm:block">Every client payment, one desk.</p>

@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/kudidesk-logo-horizontal.png" alt="KudiDesk" width="520"></p>
+
 # KudiDesk
 
 **An AI payments desk for African freelancers paid by foreign clients through PayPal.**
