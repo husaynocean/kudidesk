@@ -16,13 +16,31 @@ An AI payments desk for African freelancers paid by foreign clients through PayP
 
 - Live demo: https://kudidesk-z3p7.onrender.com
 - Code: https://github.com/husaynocean/kudidesk
-- Video: _(add your YouTube/Vimeo link)_
+- Video: _(add your YouTube link — must be **Public**, under 3 minutes)_
 
-## Prize categories
+## Prize categories to tick
 
-- Best Use of PayPal + AI / Agentic Commerce
+- Best Use of PayPal + AI
+- Best Use of Agentic Commerce (the chase agent: AI decides, drafts and acts through PayPal's remind API, with human approval)
 - Best Use of AG Grid
 - Best Use of Render
+- (Automatically considered: overall placings, Most Creative, Most Impactful, Best Demo Delivery)
+
+## Tools used (Devpost asks for this explicitly)
+
+- **Google Gemini** (`gemini-flash-lite-latest`, falling back to other Flash models) via the Gemini REST API in JSON mode. Used for three things: (1) extracting a structured invoice from a pasted client chat, (2) translating plain-English questions into AG Grid filter/sort state, and (3) the chase agent, which chooses a tone per overdue invoice from its context, explains why, and drafts the reminder. All outputs are validated with Zod before use.
+- **PayPal Developer Platform (sandbox):** Invoicing API v2 (create, send, list, get, remind, record payment), Webhooks (INVOICING.INVOICE.* with signature verification), OAuth2.
+- **AG Grid Community 36** and **AG Charts Community 14** for the invoice workspace and income chart.
+- **Render** (Blueprint `render.yaml`, free web service, health checks) for hosting.
+- **Claude Code** (Anthropic) was used as a coding assistant during development.
+
+## Submission checklist (from the rules)
+
+- [ ] Public GitHub repo with LICENSE (MIT) visible — github.com/husaynocean/kudidesk
+- [ ] Hosted demo URL — https://kudidesk-z3p7.onrender.com
+- [ ] Setup and run instructions — README
+- [ ] Video under 3 minutes, **Public** on YouTube, no copyrighted music
+- [ ] Text description + tools section (below)
 
 ---
 
@@ -87,7 +105,7 @@ nextjs, typescript, react, tailwindcss, paypal-invoicing-api, paypal-webhooks, g
 
 # Demo video script (target 2:45, max 3:00)
 
-Record on the live site at 100% zoom. Open it a minute early so Render's free instance is awake. Close other tabs and notifications.
+Upload as **Public** on YouTube (the rules require public, not unlisted). Record on the live site at 100% zoom. Open it a minute early so Render's free instance is awake. Close other tabs and notifications.
 
 | Time | On screen | Say |
 |---|---|---|
